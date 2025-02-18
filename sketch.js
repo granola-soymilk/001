@@ -1,4 +1,4 @@
-let img1, img2;
+let noise;
 let pixels1 = [];
 let pixels2 = [];
 let currentPixels = [];
@@ -10,38 +10,71 @@ let threshold = 128;
 let isFirstImage = true;
 let delaySpread = 0;
 let pixelDelays = [];
-let img1Path = '001.jpg';
-let img2Path = '002.jpg';
-let imagesLoaded = 0;
 let sourcePixels = [];
 let targetPixels = [];
+let noiseScale = 0.02; // Controls noise "zoom level"
+let noiseOffset = 0; // For animating noise
 
 function setup() {
     const canvas = createCanvas(1280, 720); // 16:9 ratio
     canvas.parent('canvas-container');
     
-    // Load the predefined images
-    loadImage(img1Path, img => {
-        img1 = img;
-        pixels1 = processImage(img1);
-        sourcePixels = pixels1;
-        currentPixels = pixels1.map(p => ({x: p.x, y: p.y}));
-        isFirstImage = true;
-        imagesLoaded++;
-        console.log('Image 1 loaded, pixels:', pixels1.length);
-    });
+    // Initialize noise with random seed
+    noise = new OpenSimplexNoise(Date.now());
     
-    loadImage(img2Path, img => {
-        img2 = img;
-        pixels2 = processImage(img2);
-        targetPixels = pixels2;
-        imagesLoaded++;
-        console.log('Image 2 loaded, pixels:', pixels2.length);
-    });
+    // Generate initial pixel positions
+    pixels1 = generateNoisePixels(0);
+    pixels2 = generateNoisePixels(1000); // Offset for different pattern
+    
+    sourcePixels = pixels1;
+    targetPixels = pixels2;
+    currentPixels = pixels1.map(p => ({x: p.x, y: p.y}));
     
     // Setup UI controls
     setupControls();
     resetPixelDelays();
+}
+
+function generateNoisePixels(offset) {
+    let points = [];
+    let occupied = new Set();
+    let positions = [];
+    
+    // Create a grid of potential positions
+    let gridSize = pixelSize;
+    for (let x = 0; x < width; x += gridSize) {
+        for (let y = 0; y < height; y += gridSize) {
+            // Get noise value for this position
+            let noiseVal = (noise.noise2D((x + offset) * noiseScale, y * noiseScale) + 1) * 127.5;
+            if (noiseVal > threshold) {
+                positions.push({x, y, brightness: noiseVal});
+            }
+        }
+    }
+    
+    // Sort by brightness to prioritize brighter areas
+    positions.sort((a, b) => b.brightness - a.brightness);
+    
+    // Take the brightest positions that don't overlap
+    for (let pos of positions) {
+        if (points.length >= pixelCount) break;
+        
+        // Snap to grid
+        let canvasX = floor(pos.x / gridSize) * gridSize;
+        let canvasY = floor(pos.y / gridSize) * gridSize;
+        
+        // Check if position is available
+        let key = `${canvasX},${canvasY}`;
+        if (!occupied.has(key)) {
+            occupied.add(key);
+            points.push({
+                x: canvasX,
+                y: canvasY
+            });
+        }
+    }
+    
+    return points;
 }
 
 function resetPixelDelays() {
@@ -199,9 +232,8 @@ function setupControls() {
     select('#pixelSize').input(function() {
         pixelSize = parseInt(this.value());
         select('#pixelSizeValue').html(pixelSize);
-        // Regenerate points when pixel size changes to maintain grid alignment
-        if (img1) pixels1 = processImage(img1);
-        if (img2) pixels2 = processImage(img2);
+        pixels1 = generateNoisePixels(0);
+        pixels2 = generateNoisePixels(1000);
         currentPixels = pixels1.map(p => ({x: p.x, y: p.y}));
         sourcePixels = pixels1;
         targetPixels = pixels2;
@@ -211,8 +243,8 @@ function setupControls() {
     select('#pixelCount').input(function() {
         pixelCount = parseInt(this.value());
         select('#pixelCountValue').html(pixelCount);
-        if (img1) pixels1 = processImage(img1);
-        if (img2) pixels2 = processImage(img2);
+        pixels1 = generateNoisePixels(0);
+        pixels2 = generateNoisePixels(1000);
         currentPixels = pixels1.map(p => ({x: p.x, y: p.y}));
         sourcePixels = pixels1;
         targetPixels = pixels2;
@@ -222,8 +254,8 @@ function setupControls() {
     select('#threshold').input(function() {
         threshold = parseInt(this.value());
         select('#thresholdValue').html(threshold);
-        if (img1) pixels1 = processImage(img1);
-        if (img2) pixels2 = processImage(img2);
+        pixels1 = generateNoisePixels(0);
+        pixels2 = generateNoisePixels(1000);
         currentPixels = pixels1.map(p => ({x: p.x, y: p.y}));
         sourcePixels = pixels1;
         targetPixels = pixels2;
@@ -238,11 +270,14 @@ function setupControls() {
     
     // Generate button
     select('#generate').mousePressed(function() {
-        if (img1 && img2 && !isAnimating) {
+        if (!isAnimating) {
             isAnimating = true;
             animationProgress = 0;
             resetPixelDelays();
-            // Set target pixels based on current state
+            // Generate new noise patterns
+            pixels1 = generateNoisePixels(noiseOffset);
+            pixels2 = generateNoisePixels(noiseOffset + 1000);
+            noiseOffset += 100; // Increment offset for next generation
             sourcePixels = isFirstImage ? pixels1 : pixels2;
             targetPixels = isFirstImage ? pixels2 : pixels1;
         }
