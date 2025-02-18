@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image Transition Tool</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.js"></script>
+    <script src="sketch.js"></script>
+    <style>
+        body {
+            margin: 0;
+            display: flex;
+            background: #333;
+            color: white;
+            font-family: Arial, sans-serif;
+        }
+        #controls {
+            padding: 20px;
+            width: 200px;
+            background: #444;
+        }
+        .control-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+        }
+        input[type="range"] {
+            width: 100%;
+        }
+        input[type="file"] {
+            margin-bottom: 10px;
+        }
+        button {
+            padding: 8px 16px;
+            background: #666;
+            border: none;
+            color: white;
+            cursor: pointer;
+            width: 100%;
+        }
+        button:hover {
+            background: #777;
+        }
+    </style>
+</head>
+<body>
+    <div id="controls">
+        <div class="control-group">
+            <label for="pixelSize">Pixel Size: <span id="pixelSizeValue">20</span></label>
+            <input type="range" id="pixelSize" min="10" max="200" value="20">
+        </div>
+        <div class="control-group">
+            <label for="pixelCount">Pixel Count: <span id="pixelCountValue">50</span></label>
+            <input type="range" id="pixelCount" min="20" max="200" value="50">
+        </div>
+        <div class="control-group">
+            <label for="threshold">Threshold: <span id="thresholdValue">128</span></label>
+            <input type="range" id="threshold" min="0" max="255" value="128">
+        </div>
+        <div class="control-group">
+            <label for="delaySpread">Movement Delay: <span id="delaySpreadValue">0</span></label>
+            <input type="range" id="delaySpread" min="0" max="100" value="0">
+        </div>
+        <button id="generate">Generate</button>
+    </div>
+    <div id="canvas-container"></div>
+</body>
+</html> 
