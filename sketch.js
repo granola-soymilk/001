@@ -88,81 +88,69 @@ function resetPixelDelays() {
 function draw() {
     background(0);
     
-    if (imagesLoaded < 2) {
-        fill(255);
-        noStroke();
-        textSize(20);
-        text('Loading images...', width/2 - 50, height/2);
-        return;
+    // Draw pixels
+    if (isAnimating) {
+        // Animation logic
+        animationProgress = min(animationProgress + 0.008, 1);
+        
+        // Safety check for array lengths
+        if (currentPixels.length === 0 || sourcePixels.length === 0 || targetPixels.length === 0) {
+            console.log('Error: Empty pixel arrays');
+            return;
+        }
+        
+        // Update and draw pixels
+        for (let i = 0; i < currentPixels.length; i++) {
+            let startPos = sourcePixels[i];
+            let endPos = targetPixels[i];
+            
+            let delayedProgress = max(0, animationProgress - pixelDelays[i]);
+            let normalizedProgress = delayedProgress;
+            let eased = easeInOutCubic(normalizedProgress);
+            
+            currentPixels[i].x = lerp(startPos.x, endPos.x, eased);
+            currentPixels[i].y = lerp(startPos.y, endPos.y, eased);
+        }
+        
+        // Check if animation is complete
+        let allPixelsComplete = currentPixels.every((pixel, i) => {
+            return animationProgress >= (1 + pixelDelays[i]);
+        });
+        
+        if (allPixelsComplete) {
+            isAnimating = false;
+            isFirstImage = !isFirstImage;
+            let temp = sourcePixels;
+            sourcePixels = targetPixels;
+            targetPixels = temp;
+            animationProgress = 0;
+        }
     }
     
-    if (img1 && img2) {
-        // Draw pixels first
-        if (isAnimating) {
-            // Animation logic...
-            animationProgress = min(animationProgress + 0.008, 1);
-            
-            // Safety check for array lengths
-            if (currentPixels.length === 0 || sourcePixels.length === 0 || targetPixels.length === 0) {
-                console.log('Error: Empty pixel arrays');
-                return;
-            }
-            
-            // Update and draw pixels
-            for (let i = 0; i < currentPixels.length; i++) {
-                let startPos = sourcePixels[i];
-                let endPos = targetPixels[i];
-                
-                let delayedProgress = max(0, animationProgress - pixelDelays[i]);
-                let normalizedProgress = delayedProgress;
-                let eased = easeInOutCubic(normalizedProgress);
-                
-                currentPixels[i].x = lerp(startPos.x, endPos.x, eased);
-                currentPixels[i].y = lerp(startPos.y, endPos.y, eased);
-            }
-            
-            // Check if animation is complete
-            let allPixelsComplete = currentPixels.every((pixel, i) => {
-                return animationProgress >= (1 + pixelDelays[i]);
-            });
-            
-            if (allPixelsComplete) {
-                isAnimating = false;
-                isFirstImage = !isFirstImage;
-                let temp = sourcePixels;
-                sourcePixels = targetPixels;
-                targetPixels = temp;
-                animationProgress = 0;
-            }
+    // Draw all pixels
+    noStroke();
+    fill(255);
+    let visiblePixels = 0;
+    for (let pixel of currentPixels) {
+        if (pixel && !isNaN(pixel.x) && !isNaN(pixel.y)) {
+            rect(pixel.x, pixel.y, pixelSize, pixelSize);
+            visiblePixels++;
         }
-        
-        // Draw all pixels
-        noStroke();
-        fill(255);
-        let visiblePixels = 0;
-        for (let pixel of currentPixels) {
-            if (pixel && !isNaN(pixel.x) && !isNaN(pixel.y)) {
-                rect(pixel.x, pixel.y, pixelSize, pixelSize);
-                visiblePixels++;
-            }
-        }
-        
-        // Draw debug info below the canvas
-        push();
-        translate(0, height + 10);
-        fill(255);
-        noStroke();
-        textSize(12);
-        text('Image 1: ' + (img1 ? 'Loaded' : 'Not loaded'), 10, 20);
-        text('Image 2: ' + (img2 ? 'Loaded' : 'Not loaded'), 10, 40);
-        text('Current Pixels: ' + currentPixels.length, 10, 60);
-        text('Source Pixels: ' + sourcePixels.length, 10, 80);
-        text('Target Pixels: ' + targetPixels.length, 10, 100);
-        text('Animation Progress: ' + animationProgress.toFixed(2), 10, 120);
-        text('Is Animating: ' + isAnimating, 10, 140);
-        text('Visible Pixels: ' + visiblePixels, 10, 160);
-        pop();
     }
+    
+    // Draw debug info below the canvas
+    push();
+    translate(0, height + 10);
+    fill(255);
+    noStroke();
+    textSize(12);
+    text('Current Pixels: ' + currentPixels.length, 10, 60);
+    text('Source Pixels: ' + sourcePixels.length, 10, 80);
+    text('Target Pixels: ' + targetPixels.length, 10, 100);
+    text('Animation Progress: ' + animationProgress.toFixed(2), 10, 120);
+    text('Is Animating: ' + isAnimating, 10, 140);
+    text('Visible Pixels: ' + visiblePixels, 10, 160);
+    pop();
 }
 
 function processImage(img) {
